@@ -5,8 +5,15 @@ import CategoryScrollStrip from '../../components/home/CategoryScrollStrip';
 import ProductCard from '../../components/products/ProductCard';
 import PageHero from '../../components/common/PageHero';
 import { useCatalog } from '../../context/CatalogContext';
-import { getDealProducts, getNewArrivalProducts } from '../../utils/catalogHelpers';
-import { HERO_IMAGES } from '../../data/heroImages';
+import {
+  getDealProducts,
+  getFeaturedHomeServices,
+  getNewArrivalProducts,
+} from '../../utils/catalogHelpers';
+import ServiceHomeCard from '../../components/services/ServiceHomeCard';
+import { HERO_IMAGES, SERVICE_CATEGORY_HERO_IMAGES } from '../../data/heroImages';
+import PageSeo from '../../components/seo/PageSeo';
+import { homeJsonLd, seoDefaults } from '../../config/seo';
 
 const stats = [
   { value: '500+', label: 'Happy Customers', icon: '😊' },
@@ -16,15 +23,22 @@ const stats = [
 ];
 
 export default function HomePage() {
-  const { products, serviceCategories } = useCatalog();
+  const { products, services, serviceCategories } = useCatalog();
   const dealProducts = useMemo(() => getDealProducts(products, 4), [products]);
   const newArrivals = useMemo(
     () => getNewArrivalProducts(products, 8, dealProducts.map((product) => product.id)),
     [products, dealProducts],
   );
+  const featuredServices = useMemo(() => getFeaturedHomeServices(services, 8), [services]);
 
   return (
     <div className="space-y-10 sm:space-y-14">
+      <PageSeo
+        title={null}
+        description={seoDefaults.description}
+        path="/"
+        jsonLd={homeJsonLd()}
+      />
 
       <PageHero
         image={HERO_IMAGES.home}
@@ -99,21 +113,25 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {serviceCategories.map((cat, i) => (
+          {serviceCategories.map((cat) => (
             <Link
               key={cat.id}
-              to="/services"
-              className="group relative card-premium no-underline text-center p-5 flex flex-col items-center gap-3 overflow-hidden"
+              to={`/services?category=${cat.id}`}
+              className="group relative card-premium no-underline overflow-hidden p-0 flex flex-col"
             >
-              {/* color accent top bar */}
-              <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-[20px] bg-gradient-to-r ${cat.color}`} />
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition-transform bg-gradient-to-br ${cat.color} bg-opacity-10 shadow-sm`}
-                style={{ background: `linear-gradient(135deg, rgba(var(--tw-gradient-from-position),0.1), rgba(var(--tw-gradient-to-position),0.08))` }}
-              >
-                <span className="text-3xl">{cat.icon}</span>
+              <div className={`absolute top-0 left-0 right-0 h-1 z-10 bg-gradient-to-r ${cat.color}`} />
+              <div className="aspect-[4/3] overflow-hidden bg-[#f0e4c8]">
+                <img
+                  src={SERVICE_CATEGORY_HERO_IMAGES[cat.id] || HERO_IMAGES.services}
+                  alt={cat.label}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
+                />
               </div>
-              <div>
-                <p className="text-sm font-black text-[#4a3728] group-hover:text-[#c05621] transition-colors leading-tight">{cat.label}</p>
+              <div className="p-4 text-center">
+                <p className="text-sm font-black text-[#4a3728] group-hover:text-[#c05621] transition-colors leading-tight">
+                  {cat.label}
+                </p>
                 <p className="text-[10px] text-[#a08060] mt-0.5 font-semibold">{cat.services.length} services</p>
               </div>
             </Link>
@@ -158,6 +176,32 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* ─── FEATURED SERVICES ─── */}
+      {featuredServices.length > 0 && (
+        <section>
+          <div className="flex items-end justify-between gap-4 mb-7">
+            <div>
+              <span className="kicker" style={{ color: '#0d9488' }}>📋 Book now</span>
+              <h2 className="text-2xl sm:text-3xl font-black text-[#4a3728]">Services you can book</h2>
+              <p className="text-[#8b7355] text-sm mt-1.5">
+                Verified pros across Lucknow — same style as our paint catalogue
+              </p>
+            </div>
+            <Link
+              to="/services"
+              className="shrink-0 inline-flex items-center gap-1.5 text-sm font-bold text-[#c05621] hover:text-[#ea7a2a] no-underline border border-[#edd9b8] rounded-xl px-4 py-2 hover:bg-[#fff3d6] transition-all"
+            >
+              View all services →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+            {featuredServices.map((service) => (
+              <ServiceHomeCard key={service.id} service={service} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ─── TESTIMONIALS ─── */}
       <section className="relative overflow-hidden rounded-3xl p-8 sm:p-12"

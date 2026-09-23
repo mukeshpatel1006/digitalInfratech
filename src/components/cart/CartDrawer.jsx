@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { money } from '../../data/mockData';
 import { useCart } from '../../context/CartContext';
+import { resolveServiceImage } from '../../utils/serviceImage';
+import { getDiscountPercent } from '../../utils/catalogHelpers';
 
 export default function CartDrawer() {
   const {
@@ -48,13 +50,33 @@ export default function CartDrawer() {
               {cart.map((item) => (
                 <div key={`${item.type}-${item.id}`} className="flex gap-4 pb-6 border-b border-gray-100 last:border-0 last:pb-0">
                   <div className="w-20 h-20 bg-gray-50 rounded-xl flex items-center justify-center p-2 flex-shrink-0 border border-gray-100">
-                    <img src={item.image} alt={item.name} className="max-w-full max-h-full object-contain mix-blend-multiply" />
+                    <img
+                      src={item.type === 'service' ? resolveServiceImage(item) : item.image}
+                      alt={item.name}
+                      className={`max-w-full max-h-full ${
+                        item.type === 'service' ? 'object-cover rounded-lg' : 'object-contain mix-blend-multiply'
+                      }`}
+                    />
                   </div>
                   <div className="flex-1 flex flex-col">
                     <div className="flex justify-between gap-2 mb-1">
                       <h4 className="font-bold text-gray-900 leading-tight text-sm sm:text-base">{item.name}</h4>
-                      <strong className="text-gray-900 whitespace-nowrap">{money.format(item.price * item.qty)}</strong>
+                      <div className="text-right">
+                        <strong className="text-gray-900 whitespace-nowrap block">
+                          {money.format(item.price * item.qty)}
+                        </strong>
+                        {item.originalPrice > item.price && (
+                          <span className="text-[10px] text-gray-400 line-through block">
+                            {money.format(item.originalPrice * item.qty)}
+                          </span>
+                        )}
+                      </div>
                     </div>
+                    {getDiscountPercent(item.price, item.originalPrice) > 0 && (
+                      <span className="inline-block text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md mb-1">
+                        {getDiscountPercent(item.price, item.originalPrice)}% off
+                      </span>
+                    )}
                     <p className="text-xs text-gray-500 mb-3">{item.pack}</p>
                     <div className="flex items-center justify-between mt-auto">
                       <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50">

@@ -4,6 +4,7 @@ import AdminLayout from './AdminLayout';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useCatalog } from '../../context/CatalogContext';
 import { money } from '../../data/mockData';
+import { getServiceImageUrl, resolveServiceImage } from '../../utils/serviceImage';
 import { PRODUCT_CATEGORIES, SERVICE_CATEGORY_META } from '../../data/serviceCategoryMeta';
 import { getDiscountPercent } from '../../utils/catalogHelpers';
 
@@ -21,7 +22,7 @@ const emptyServiceForm = {
   summary: '',
   category: SERVICE_CATEGORY_META[0].id,
   price: '',
-  emoji: '🛠️',
+  discount: '',
   image: '',
 };
 
@@ -136,7 +137,7 @@ export default function AdminCatalog() {
       summary: item.summary,
       category: item.category,
       price: String(item.price),
-      emoji: item.emoji || '🛠️',
+      discount: String(getDiscountPercent(item.price, item.originalPrice)),
       image: item.image || '',
     });
     setError('');
@@ -159,10 +160,13 @@ export default function AdminCatalog() {
     }
   };
 
-  const productDiscountPreview =
-    productForm.price && productForm.discount
-      ? Math.round(Number(productForm.price) / (1 - Math.min(99, Number(productForm.discount)) / 100))
+  const discountPreview = (form) =>
+    form.price && form.discount
+      ? Math.round(Number(form.price) / (1 - Math.min(99, Number(form.discount)) / 100))
       : null;
+
+  const productDiscountPreview = discountPreview(productForm);
+  const serviceDiscountPreview = discountPreview(serviceForm);
 
   return (
     <AdminLayout title="Catalog Manager">
@@ -330,21 +334,29 @@ export default function AdminCatalog() {
                     type="number"
                     min="0"
                     className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm"
-                    placeholder="Price"
+                    placeholder="Sale price (₹)"
                     value={serviceForm.price}
                     onChange={(e) => setServiceForm({ ...serviceForm, price: e.target.value })}
                     required
                   />
                   <input
+                    type="number"
+                    min="0"
+                    max="99"
                     className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm"
-                    placeholder="Emoji"
-                    value={serviceForm.emoji}
-                    onChange={(e) => setServiceForm({ ...serviceForm, emoji: e.target.value })}
+                    placeholder="Discount %"
+                    value={serviceForm.discount}
+                    onChange={(e) => setServiceForm({ ...serviceForm, discount: e.target.value })}
                   />
                 </div>
+                {serviceDiscountPreview && (
+                  <p className="text-xs text-stone-500">
+                    MRP preview: <strong>{money.format(serviceDiscountPreview)}</strong>
+                  </p>
+                )}
                 <input
                   className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm"
-                  placeholder="Image URL (optional)"
+                  placeholder="Image URL (optional — category photo used if empty)"
                   value={serviceForm.image}
                   onChange={(e) => setServiceForm({ ...serviceForm, image: e.target.value })}
                 />
@@ -388,8 +400,7 @@ export default function AdminCatalog() {
             ) : (
               <ul className="divide-y divide-stone-100">
                 {(tab === 'products' ? products : services).map((item) => {
-                  const discount =
-                    tab === 'products' ? getDiscountPercent(item.price, item.originalPrice) : 0;
+                  const discount = getDiscountPercent(item.price, item.originalPrice);
                   const isEditing =
                     tab === 'products'
                       ? editingProductId === item.id
@@ -403,15 +414,21 @@ export default function AdminCatalog() {
                       }`}
                     >
                       <div className="flex items-start gap-3 min-w-0">
-                        {item.image ? (
+                        {tab === 'services' ? (
                           <img
-                            src={item.image}
+                            src={resolveServiceImage(item)}
+                            alt=""
+                            className="w-12 h-12 rounded-lg object-cover border border-stone-100 shrink-0"
+                          />
+                        ) : item.image ? (
+                          <img
+                            src={getServiceImageUrl(item.image)}
                             alt=""
                             className="w-12 h-12 rounded-lg object-cover border border-stone-100 shrink-0"
                           />
                         ) : (
-                          <span className="w-12 h-12 rounded-lg bg-stone-100 flex items-center justify-center text-xl shrink-0">
-                            {item.emoji || '📦'}
+                          <span className="w-12 h-12 rounded-lg bg-stone-100 flex items-center justify-center text-xs text-stone-400 shrink-0 font-bold">
+                            N/A
                           </span>
                         )}
                         <div className="min-w-0">
